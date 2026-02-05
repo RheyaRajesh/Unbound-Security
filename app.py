@@ -17,7 +17,6 @@ st.set_page_config(
 )
 
 # Session state will be initialized in main() function
-
 # Available models (Unbound API)
 AVAILABLE_MODELS = [
     "kimi-k2p5",
@@ -450,46 +449,58 @@ def workflows_list_page():
             st.rerun()
     
     # Display workflows
-    for workflow in workflows:
+    for workflow_meta in workflows:
+
+        # 🔥 LOAD FULL WORKFLOW TO GET NAME
+        workflow = st.session_state.storage.load_workflow(workflow_meta["id"])
+        if not workflow:
+            continue
+
+        name = workflow.get("name", "Unnamed Workflow")
+
         with st.container():
             col1, col2, col3, col4 = st.columns([3, 1, 1, 2])
+
             with col1:
-                st.markdown(f"### {workflow['name']}")
-                st.caption(f"ID: {workflow['id']} | Updated: {workflow.get('updated_at', '')[:19]}")
+                st.markdown(f"### {name}")
+                st.caption(f"ID: {workflow_meta['id']} | Updated: {workflow_meta.get('updated_at', '')[:19]}")
+
             with col2:
-                st.metric("Steps", workflow.get("steps_count", 0))
+                st.metric("Steps", len(workflow.get("steps", [])))
+
             with col3:
-                if st.button("✏️ Edit", key=f"edit_{workflow['id']}"):
+                if st.button("✏️ Edit", key=f"edit_{workflow_meta['id']}"):
                     try:
-                        st.query_params["workflow_id"] = workflow["id"]
-                    except (AttributeError, TypeError):
-                        st.session_state.workflow_id = workflow["id"]
+                        st.query_params["workflow_id"] = workflow_meta["id"]
+                    except:
+                        st.session_state.workflow_id = workflow_meta["id"]
                     st.session_state.page = "create"
                     st.rerun()
+
             with col4:
                 col_run, col_export, col_del = st.columns(3)
+
                 with col_run:
-                    if st.button("▶️ Run", key=f"run_{workflow['id']}"):
-                        full_workflow = st.session_state.storage.load_workflow(workflow["id"])
-                        st.session_state.run_workflow = full_workflow
+                    if st.button("▶️ Run", key=f"run_{workflow_meta['id']}"):
+                        st.session_state.run_workflow = workflow
                         st.rerun()
+
                 with col_export:
-                    full_workflow = st.session_state.storage.load_workflow(workflow["id"])
-                    if full_workflow:
-                        json_str = json.dumps(full_workflow, indent=2)
-                        st.download_button(
-                            label="📥",
-                            data=json_str,
-                            file_name=f"{workflow['name']}_{workflow['id']}.json",
-                            mime="application/json",
-                            key=f"export_{workflow['id']}"
-                        )
+                    json_str = json.dumps(workflow, indent=2)
+                    st.download_button(
+                        label="📥",
+                        data=json_str,
+                        file_name=f"{name}_{workflow_meta['id']}.json",
+                        mime="application/json",
+                        key=f"export_{workflow_meta['id']}"
+                    )
+
                 with col_del:
-                    if st.button("🗑️", key=f"del_{workflow['id']}"):
-                        st.session_state.storage.delete_workflow(workflow["id"])
+                    if st.button("🗑️", key=f"del_{workflow_meta['id']}"):
+                        st.session_state.storage.delete_workflow(workflow_meta["id"])
                         st.rerun()
-            
-            st.divider()
+
+        st.divider()
 
 
 def execution_history_page():
