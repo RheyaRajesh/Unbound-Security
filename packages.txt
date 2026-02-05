@@ -1,0 +1,2 @@
+# This file is used by Streamlit Cloud to install system dependencies
+# Currently no system dependencies needed

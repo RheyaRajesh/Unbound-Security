@@ -1,0 +1,40 @@
+{
+  "id": "example_calculator_workflow",
+  "name": "Calculator Code Generation",
+  "updated_at": "2024-01-01T00:00:00",
+  "steps": [
+    {
+      "name": "Generate Calculator Class",
+      "model": "kimi-k2-instruct-0905",
+      "prompt": "Create a Python calculator class with add, subtract, multiply, and divide methods. Include proper error handling for division by zero.",
+      "temperature": 0.7,
+      "completion_criteria": "class Calculator",
+      "criteria_type": "contains",
+      "context_extraction": "code_blocks",
+      "max_retries": 3,
+      "max_tokens": 2000
+    },
+    {
+      "name": "Add Unit Tests",
+      "model": "kimi-k2-instruct-0905",
+      "prompt": "Write comprehensive unit tests for this calculator class using pytest. Test all methods including edge cases:\n\n{context from previous step}",
+      "temperature": 0.7,
+      "completion_criteria": "def test",
+      "criteria_type": "contains",
+      "context_extraction": "full",
+      "max_retries": 3,
+      "max_tokens": 2000
+    },
+    {
+      "name": "Create Requirements File",
+      "model": "kimi-k2-instruct-0905",
+      "prompt": "Based on the calculator class and tests, create a requirements.txt file with all necessary dependencies:\n\n{context from previous step}",
+      "temperature": 0.3,
+      "completion_criteria": "pytest",
+      "criteria_type": "contains",
+      "context_extraction": "full",
+      "max_retries": 2,
+      "max_tokens": 500
+    }
+  ]
+}
