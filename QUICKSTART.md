@@ -14,7 +14,7 @@ echo "UNBOUND_API_BASE=https://api.unboundsecurity.com/v1" >> .env
 ## 2. Run the App
 
 ```bash
-streamlit run app.py
+python -m streamlit run app.p
 ```
 
 ## 3. Create Your First Workflow

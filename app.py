@@ -81,8 +81,18 @@ def render_step_editor(step: Dict[str, Any], step_index: int) -> Dict[str, Any]:
                                          value=step.get("max_retries", 3),
                                          key=f"step_retries_{step_index}")
         
+        # Handle None budget_cap values properly
+        step_budget = step.get("budget_cap")
+        if step_budget is None or step_budget == 0:
+            step_budget = 0.0
+        else:
+            try:
+                step_budget = float(step_budget)
+            except (TypeError, ValueError):
+                step_budget = 0.0
+        
         budget_cap = st.number_input("Budget Cap ($)", min_value=0.0, max_value=1000.0,
-                                    value=float(step.get("budget_cap", 0.0)),
+                                    value=step_budget,
                                     step=0.01,
                                     key=f"step_budget_{step_index}",
                                     help="Maximum cost for this step (0 = no limit)")
@@ -137,25 +147,45 @@ def create_workflow_page():
             st.error(f"Workflow {workflow_id} not found")
             workflow = None
     
-    if not workflow:
-        workflow_name = st.text_input("Workflow Name", value="My Workflow")
-        workflow = {
-            "name": workflow_name,
-            "steps": [],
-            "budget_cap": 0.0
-        }
-    else:
-        workflow_name = st.text_input("Workflow Name", value=workflow.get("name", "My Workflow"))
-        workflow["name"] = workflow_name
-        if "budget_cap" not in workflow:
-            workflow["budget_cap"] = 0.0
+    # Store workflow in session state to persist between reruns
+    workflow_key = f"editing_workflow_{workflow_id or 'new'}"
     
-    # Workflow-level budget cap
+    if workflow_id and workflow:
+        # Editing existing workflow - load it
+        if workflow_key not in st.session_state:
+            st.session_state[workflow_key] = workflow.copy()
+        workflow = st.session_state[workflow_key]
+    else:
+        # Creating new workflow
+        if workflow_key not in st.session_state:
+            st.session_state[workflow_key] = {
+                "name": "My Workflow",
+                "steps": [],
+                "budget_cap": 0.0
+            }
+        workflow = st.session_state[workflow_key]
+    
+    # Update workflow name from input
+    workflow_name = st.text_input("Workflow Name", value=workflow.get("name", "My Workflow"))
+    workflow["name"] = workflow_name
+    
+    # Workflow-level budget cap - handle None values properly
+    budget_cap_value = workflow.get("budget_cap")
+    # If budget_cap is None or 0, use 0.0 for the input
+    if budget_cap_value is None or budget_cap_value == 0:
+        budget_cap_value = 0.0
+    else:
+        try:
+            budget_cap_value = float(budget_cap_value)
+        except (TypeError, ValueError):
+            budget_cap_value = 0.0
+    
     workflow_budget = st.number_input("Workflow Budget Cap ($)", min_value=0.0, max_value=10000.0,
-                                     value=float(workflow.get("budget_cap", 0.0)),
+                                     value=budget_cap_value,
                                      step=0.1,
                                      help="Maximum total cost for entire workflow (0 = no limit)")
-    workflow["budget_cap"] = workflow_budget if workflow_budget > 0 else None
+    # Store as None only if explicitly 0, otherwise store the value
+    workflow["budget_cap"] = None if workflow_budget == 0.0 else workflow_budget
     
     # Steps editor
     st.markdown("### Steps")
@@ -174,7 +204,8 @@ def create_workflow_page():
             "criteria_type": "contains",
             "context_extraction": "full",
             "max_retries": 3,
-            "max_tokens": 2000
+            "max_tokens": 2000,
+            "budget_cap": None
         })
         st.rerun()
     
@@ -190,6 +221,8 @@ def create_workflow_page():
             st.rerun()
     
     workflow["steps"] = edited_steps
+    # Update session state with edited steps
+    st.session_state[workflow_key] = workflow
     
     # Save workflow
     col1, col2 = st.columns(2)
@@ -198,6 +231,9 @@ def create_workflow_page():
             workflow["id"] = workflow_id or None
             saved_id = st.session_state.storage.save_workflow(workflow)
             st.success(f"Workflow saved! ID: {saved_id}")
+            # Clear editing workflow from session state after saving
+            if workflow_key in st.session_state:
+                del st.session_state[workflow_key]
             time.sleep(1)
             st.rerun()
     
@@ -206,7 +242,10 @@ def create_workflow_page():
             if not workflow["steps"]:
                 st.error("Add at least one step to run the workflow")
             else:
-                st.session_state.run_workflow = workflow
+                # Make a copy for running
+                workflow_copy = workflow.copy()
+                workflow_copy["steps"] = [s.copy() for s in workflow["steps"]]
+                st.session_state.run_workflow = workflow_copy
                 st.rerun()
 
 
