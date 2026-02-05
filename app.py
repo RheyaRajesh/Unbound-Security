@@ -16,15 +16,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# Initialize session state
-if "storage" not in st.session_state:
-    st.session_state.storage = Storage()
-if "engine" not in st.session_state:
-    st.session_state.engine = WorkflowEngine()
-if "current_execution" not in st.session_state:
-    st.session_state.current_execution = None
-if "execution_progress" not in st.session_state:
-    st.session_state.execution_progress = {}
+# Session state will be initialized in main() function
 
 # Available models (Unbound API)
 AVAILABLE_MODELS = [
@@ -503,10 +495,6 @@ def main():
         
         st.markdown("---")
         st.caption("Agentic Workflow Builder v1.0")
-    
-    # Initialize page state
-    if "page" not in st.session_state:
-        st.session_state.page = "workflows"
     
     # Check if we should run a workflow
     if "run_workflow" in st.session_state:
