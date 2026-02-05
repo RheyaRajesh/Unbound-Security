@@ -103,6 +103,12 @@ def render_step_editor(step: Dict[str, Any], step_index: int) -> Dict[str, Any]:
 
 def create_workflow_page():
     """Page for creating/editing workflows"""
+    # Ensure session state is initialized
+    if "storage" not in st.session_state:
+        st.session_state.storage = Storage()
+    if "engine" not in st.session_state:
+        st.session_state.engine = WorkflowEngine()
+    
     st.title("🤖 Agentic Workflow Builder")
     st.markdown("Create multi-step AI workflows that chain LLM calls together")
     
@@ -206,6 +212,12 @@ def create_workflow_page():
 
 def run_workflow_page(workflow: Dict[str, Any]):
     """Page for running a workflow with real-time progress"""
+    # Ensure session state is initialized
+    if "storage" not in st.session_state:
+        st.session_state.storage = Storage()
+    if "engine" not in st.session_state:
+        st.session_state.engine = WorkflowEngine()
+    
     st.title("▶️ Running Workflow")
     st.markdown(f"**{workflow.get('name', 'Unnamed Workflow')}**")
     
@@ -330,6 +342,17 @@ def run_workflow_page(workflow: Dict[str, Any]):
 
 def workflows_list_page():
     """Page showing list of saved workflows"""
+    # Ensure session state is initialized (defensive check for Streamlit Cloud)
+    try:
+        _ = st.session_state.storage
+    except (AttributeError, KeyError):
+        st.session_state.storage = Storage()
+    
+    try:
+        _ = st.session_state.engine
+    except (AttributeError, KeyError):
+        st.session_state.engine = WorkflowEngine()
+    
     st.title("📋 Saved Workflows")
     
     # Import/Export section
@@ -432,6 +455,12 @@ def workflows_list_page():
 
 def execution_history_page():
     """Page showing execution history"""
+    # Ensure session state is initialized
+    if "storage" not in st.session_state:
+        st.session_state.storage = Storage()
+    if "engine" not in st.session_state:
+        st.session_state.engine = WorkflowEngine()
+    
     st.title("📊 Execution History")
     
     if st.button("← Back"):
